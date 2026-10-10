@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: compiladores-backend
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/api/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 8s
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: compiladores-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
