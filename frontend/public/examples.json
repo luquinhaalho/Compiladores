@@ -1,0 +1,20 @@
+[
+  {
+    "id": "declaracao",
+    "titulo": "Declaração e inicialização",
+    "demonstra": "Declaração de uma variável int com literal inteiro.",
+    "codigo": "int numero = 10;\n"
+  },
+  {
+    "id": "aritmetica",
+    "titulo": "Expressão aritmética",
+    "demonstra": "Inicialização com soma, multiplicação e parênteses.",
+    "codigo": "int resultado = (10 + 5) * 2;\n"
+  },
+  {
+    "id": "duas-declaracoes",
+    "titulo": "Duas declarações",
+    "demonstra": "Duas variáveis, tipos int e double, e uma divisão. O subconjunto ainda não inclui estruturas condicionais.",
+    "codigo": "int total = 8;\ndouble media = total / 2;\n"
+  }
+]

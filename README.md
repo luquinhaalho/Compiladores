@@ -1,17 +1,17 @@
 # Compiladores — visualização de AST
 
-Laboratório educacional para gerar e visualizar árvores de sintaxe abstrata (AST) de um subconjunto didático de Java. Esta primeira etapa entrega o esqueleto da aplicação web, os contêineres e a prova de comunicação entre frontend e backend.
+Software educacional para experimentar, em etapas, a geração e a visualização de árvores de sintaxe abstrata (AST). Nesta versão o estudante escreve ou escolhe um programa, pede o processamento e vê a resposta da aplicação. A análise léxica, sintática e semântica ainda não é feita.
 
 ## Linguagem e subconjunto didático
 
-A linguagem-alvo é **Java**.
+A linguagem analisada é **Java**.
 
-O recorte desta ferramenta não é a linguagem inteira. O subconjunto didático cobre:
+O recorte não é a linguagem inteira. O subconjunto didático cobre:
 
 - declaração de variáveis com tipo, nome e inicializador;
 - expressões aritméticas com literais, identificadores, parênteses e os operadores `+`, `-`, `*` e `/`.
 
-Gramática inicial, em EBNF:
+Gramática prevista, em EBNF:
 
 ```ebnf
 program     = { statement } ;
@@ -24,52 +24,94 @@ term        = factor { ("*" | "/") factor } ;
 factor      = number | identifier | "(" expression ")" | "-" factor ;
 ```
 
-Exemplo aceito por esse recorte:
+Java foi escolhida porque é uma linguagem orientada a objetos com sintaxe rica. Tipos, declarações e operadores produzem nós de naturezas diferentes na AST, o que ajuda a separar árvore concreta e árvore abstrata. O subconjunto começa pequeno para que cada fase do compilador possa ser estudada isoladamente.
 
-```java
-int total = (a + 2) * 3;
-double media = total / 2;
-```
+## O que a interface faz
 
-Java foi escolhida porque é uma linguagem orientada a objetos com uma sintaxe rica: tipos, declarações, operadores e, nas etapas seguintes, construções como blocos, chamadas e estruturas de controle. Esse vocabulário produz árvores AST com nós de naturezas distintas, o que torna a visualização útil para ensinar a fronteira entre árvore concreta e árvore abstrata. O subconjunto começa pequeno de propósito, para que cada fase do compilador (léxico, sintático, AST) possa ser estudada isoladamente.
+A tela em [http://localhost:3000](http://localhost:3000) identifica o laboratório e a linguagem Java. Ela oferece:
 
-## Arquitetura desta etapa
+- um campo monoespaçado para escrever, colar e editar o código-fonte;
+- uma lista com três exemplos, que substituem o texto do campo e podem ser editados depois;
+- o botão **Analisar**, que envia o código ao backend;
+- uma área de resultado com a mensagem da validação ou da falha de comunicação.
 
-O navegador conversa apenas com o frontend, em `http://localhost:3000`. O Nginx desse contêiner encaminha qualquer caminho `/api/` ao serviço `backend` na rede do Docker Compose (`backend:5000`). A rota de prova é `GET /api/hello`, que responde:
+O código permanece no campo depois do envio. Entradas com erro proposital são aceitas quando têm algum texto: o parser ainda não existe.
+
+### Exemplos disponíveis
+
+| Exemplo | Código | Construção demonstrada |
+|---|---|---|
+| Declaração e inicialização | `int numero = 10;` | Variável `int` com literal inteiro |
+| Expressão aritmética | `int resultado = (10 + 5) * 2;` | Soma, multiplicação e parênteses |
+| Duas declarações | `int total = 8;` e `double media = total / 2;` | Dois tipos e uma divisão |
+
+Os textos ficam em `frontend/public/examples.json`. Estruturas condicionais ficam de fora porque ainda não pertencem ao subconjunto.
+
+## Tecnologias
+
+| Parte | Tecnologia |
+|---|---|
+| Frontend | HTML, CSS e JavaScript, servidos por Nginx |
+| Backend | Python 3.12 e FastAPI |
+| Testes da API | pytest |
+| Testes da interface | Playwright, com o Google Chrome quando ele está instalado |
+| Execução | Docker Compose |
+
+O navegador fala só com o frontend, na porta 3000. O Nginx encaminha `/api/` ao serviço `backend` na rede do Compose (`backend:5000`). Por isso a página não precisa do endereço interno do contêiner.
+
+## Comunicação entre frontend e backend
+
+`POST /api/analisar`
+
+Pedido:
 
 ```json
-{ "message": "Hello, World!" }
+{ "codigo": "int numero = 10;\n" }
 ```
 
-| Serviço   | Tecnologia        | Porta no host |
-|-----------|-------------------|---------------|
-| frontend  | Nginx + HTML/JS   | 3000          |
-| backend   | Python + FastAPI  | 5000          |
+Código recebido (`200`):
 
-## Estrutura do repositório
-
-```text
-.
-├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       └── main.py
-├── frontend/
-│   ├── Dockerfile
-│   ├── nginx.conf
-│   └── public/
-│       ├── index.html
-│       ├── styles.css
-│       └── app.js
-├── docker-compose.yml
-└── README.md
+```json
+{
+  "recebido": true,
+  "mensagem": "Código recebido com sucesso. A análise léxica, sintática e semântica ainda não está disponível nesta versão.",
+  "caracteres": 18
+}
 ```
+
+Entrada vazia ou só com espaços (`400`):
+
+```json
+{ "recebido": false, "mensagem": "Informe um código-fonte antes de solicitar a análise." }
+```
+
+A frase muda quando o texto existe, mas não tem conteúdo útil: "Não há conteúdo útil para analisar. Informe um programa antes de continuar."
+
+JSON ausente, campo `codigo` ausente ou `codigo` que não é texto (`400`):
+
+```json
+{
+  "recebido": false,
+  "mensagem": "A requisição é inválida. Envie um JSON com o campo \"codigo\" contendo o texto do programa."
+}
+```
+
+Falha interna (`500`): uma mensagem genérica, sem rastreamento, caminho do servidor ou detalhe da exceção.
+
+Se o frontend não obtém resposta, a tela mostra: "Não foi possível comunicar com o servidor. Verifique a conexão e tente novamente."
+
+A rota `GET /api/hello` da primeira etapa continua respondendo `{"message":"Hello, World!"}`. `GET /api/health` é o healthcheck do contêiner.
 
 ## Pré-requisitos
 
-- [Docker Engine](https://docs.docker.com/engine/install/) 24 ou superior
-- Docker Compose V2, o plugin embutido no Docker (`docker compose`, com espaço)
+- Docker Engine 24 ou superior (neste ambiente: 29.8.2)
+- Docker Compose V2 (`docker compose`, com espaço; neste ambiente: v5.5.1)
+
+Para a suíte local, além do Docker:
+
+- Python 3.11 ou superior
+- Node.js 22 ou superior
+- Google Chrome, para os testes de interface neste Windows
 
 Confira as versões:
 
@@ -78,17 +120,15 @@ docker --version
 docker compose version
 ```
 
-O Compose V2 acompanha o Docker Desktop e a maioria das instalações recentes do Engine. Não é necessário instalar Python nem Node na máquina: as dependências ficam dentro das imagens.
-
 ## Clonagem e inicialização
 
 ```bash
-git clone <url-do-repositorio>
+git clone https://github.com/luquinhaalho/Compiladores.git
 cd Compiladores
 docker compose up --build
 ```
 
-O primeiro arranque constrói as duas imagens e sobe os serviços. Quando o frontend estiver saudável, abra [http://localhost:3000](http://localhost:3000). A página deve exibir **Hello, World!**, texto vindo do backend.
+Abra [http://localhost:3000](http://localhost:3000). Escolha um exemplo, edite o código se quiser e clique em **Analisar**.
 
 Para deixar os contêineres em segundo plano:
 
@@ -96,7 +136,7 @@ Para deixar os contêineres em segundo plano:
 docker compose up --build -d
 ```
 
-A API também responde direto em [http://localhost:5000/api/hello](http://localhost:5000/api/hello). O caminho que valida a rede entre os contêineres é o da porta 3000: o Nginx do frontend é quem chama o backend.
+A API também responde em [http://localhost:5000/api/analisar](http://localhost:5000/api/analisar). O caminho que passa pela rede entre os contêineres é o da porta 3000.
 
 ## Encerramento
 
@@ -106,19 +146,63 @@ No terminal em que o Compose está em primeiro plano, use `Ctrl+C` e depois:
 docker compose down
 ```
 
-Se os serviços foram iniciados com `-d`, o mesmo comando encerra e remove os contêineres:
+O mesmo comando encerra os serviços iniciados com `-d`.
+
+## Testes
+
+Os registros de execução estão em [docs/testes.md](docs/testes.md).
+
+Backend, na pasta `backend`, com o ambiente virtual já criado:
 
 ```bash
-docker compose down
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements-dev.txt
+.venv\Scripts\python -m pytest
 ```
 
-## Verificação rápida
+No Linux ou no macOS, o executável fica em `.venv/bin/python`. A suíte padrão não sobe o Docker. Ela cobre a classificação da entrada, o contrato de `POST /api/analisar`, os exemplos e a rota `GET /api/hello`.
 
-Com os serviços no ar:
+Interface, na pasta `frontend`:
 
 ```bash
-curl http://localhost:3000/api/hello
-curl http://localhost:5000/api/hello
+npm install
+npx playwright install chromium
+npm test
 ```
 
-As duas respostas devem ser `{"message":"Hello, World!"}`. A primeira passa pelo contêiner do frontend; a segunda fala direto com o backend.
+Se o Google Chrome estiver em `C:\Program Files\Google\Chrome\Application\chrome.exe`, o Playwright usa esse navegador e o `npx playwright install chromium` pode ser omitido.
+
+Implantação, com o daemon do Docker em execução, a partir de `backend`:
+
+```bash
+.venv\Scripts\python -m pytest -m deploy --override-ini="addopts="
+```
+
+Esse teste constrói as imagens, espera o healthcheck, envia um programa e uma entrada em branco pela porta 3000 e derruba os contêineres ao final.
+
+## Estrutura do repositório
+
+```text
+.
+├── backend/
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── mensagens.py
+│   │   └── validacao.py
+│   ├── tests/
+│   └── Dockerfile
+├── frontend/
+│   ├── public/
+│   ├── tests/interface.spec.js
+│   └── Dockerfile
+├── docs/testes.md
+├── docker-compose.yml
+└── README.md
+```
+
+## Limitações desta versão
+
+- Não há analisador léxico, sintático nem semântico, e nenhuma AST é desenhada.
+- Qualquer texto que não seja vazio nem só espaços é aceito, inclusive código fora do subconjunto.
+- Os testes de interface dependem de Node.js e de um navegador (Chrome instalado ou Chromium do Playwright).
+- O teste marcado com `deploy` altera o estado do Docker local e usa as portas 3000 e 5000.

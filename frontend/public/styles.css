@@ -6,6 +6,8 @@
   --line: #e2d9cc;
   --accent: #0f6e6b;
   --accent-soft: #e5f3f2;
+  --danger: #8d2a22;
+  --danger-soft: #fdecea;
 }
 
 * {
@@ -23,9 +25,9 @@ body {
 }
 
 .shell {
-  width: min(720px, calc(100% - 2rem));
+  width: min(1040px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: 4.5rem 0 3rem;
+  padding: 3.2rem 0 3rem;
 }
 
 .eyebrow {
@@ -39,64 +41,141 @@ body {
 
 h1 {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-size: clamp(2rem, 4vw, 2.7rem);
   font-weight: 650;
   letter-spacing: -0.03em;
   line-height: 1.1;
 }
 
 .lede {
-  max-width: 38rem;
-  margin: 1rem 0 0;
+  max-width: 40rem;
+  margin: 0.9rem 0 0;
   color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.55;
 }
 
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.8fr);
+  gap: 1rem;
+  margin-top: 1.8rem;
+  align-items: start;
+}
+
 .panel {
-  margin-top: 2.4rem;
-  padding: 1.4rem 1.5rem 1.5rem;
+  padding: 1.25rem 1.3rem 1.35rem;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: 0 16px 40px rgba(60, 42, 20, 0.06);
 }
 
-.panel-head h2 {
+.panel-head h2,
+.field label {
   margin: 0;
-  font-size: 1.05rem;
-}
-
-.panel-head p {
-  margin: 0.35rem 0 0;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-code {
-  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
-  font-size: 0.86em;
-}
-
-.message {
-  margin: 1.2rem 0 0;
-  padding: 1rem 1.1rem;
-  background: var(--accent-soft);
-  border-radius: 10px;
-  color: var(--accent);
-  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
-  font-size: 1.35rem;
+  font-size: 0.95rem;
   font-weight: 700;
 }
 
+.panel-head p,
+.hint,
+.detail {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.field + .field {
+  margin-top: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: inherit;
+}
+
+select {
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  color: var(--ink);
+}
+
+textarea {
+  min-height: 280px;
+  padding: 0.9rem 1rem;
+  resize: vertical;
+  background: #1c1915;
+  color: #f4efe6;
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+textarea:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button {
+  margin-top: 1rem;
+  padding: 0.72rem 1.2rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+.message {
+  margin: 1rem 0 0;
+  padding: 0.95rem 1rem;
+  border-radius: 10px;
+  background: #f6f1e8;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.message.is-ok {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
 .message.is-error {
-  background: #fdecea;
-  color: #8d2a22;
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .detail {
   min-height: 1.2rem;
-  margin: 0.75rem 0 0;
-  color: var(--muted);
-  font-size: 0.88rem;
+}
+
+@media (max-width: 800px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  textarea {
+    min-height: 220px;
+  }
 }

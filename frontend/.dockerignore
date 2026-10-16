@@ -1,2 +1,10 @@
 Dockerfile
 .dockerignore
+node_modules
+tests
+test-server.js
+package.json
+package-lock.json
+playwright.config.js
+test-results
+playwright-report

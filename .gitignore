@@ -2,5 +2,10 @@ __pycache__/
 *.py[cod]
 .venv/
 .env
+.pytest_cache/
+node_modules/
+test-results/
+playwright-report/
+blob-report/
 .DS_Store
 Thumbs.db

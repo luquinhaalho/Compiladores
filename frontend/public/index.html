@@ -12,21 +12,46 @@
         <p class="eyebrow">Laboratório de compiladores</p>
         <h1>Árvores de sintaxe abstrata</h1>
         <p class="lede">
-          Subconjunto didático de Java: declaração de variáveis e expressões
-          aritméticas.
+          Linguagem analisada: <strong>Java</strong>. Subconjunto didático com
+          declaração de variáveis e expressões aritméticas.
         </p>
       </header>
 
-      <section class="panel" aria-labelledby="hello-heading">
-        <div class="panel-head">
-          <h2 id="hello-heading">Mensagem integrada</h2>
-          <p>Resposta de <code>GET /api/hello</code> no backend.</p>
-        </div>
-        <p id="message" class="message" role="status" aria-live="polite">
-          Aguardando o backend…
-        </p>
-        <p id="detail" class="detail"></p>
-      </section>
+      <div class="workspace">
+        <form id="form-analise" class="panel editor-panel">
+          <div class="field">
+            <label for="exemplo">Exemplo de programa</label>
+            <select id="exemplo" name="exemplo">
+              <option value="">Escolher um exemplo…</option>
+            </select>
+            <p id="exemplo-nota" class="hint"></p>
+          </div>
+
+          <div class="field">
+            <label for="codigo">Código-fonte</label>
+            <textarea
+              id="codigo"
+              name="codigo"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="Escreva ou cole um programa do subconjunto didático de Java."
+            ></textarea>
+          </div>
+
+          <button type="submit" id="analisar">Analisar</button>
+        </form>
+
+        <section class="panel" aria-labelledby="resultado-titulo">
+          <div class="panel-head">
+            <h2 id="resultado-titulo">Resultado</h2>
+            <p>Validação da entrada e resposta do servidor.</p>
+          </div>
+          <p id="resultado" class="message" role="status" aria-live="polite">
+            O resultado da solicitação aparece aqui.
+          </p>
+          <p id="resultado-detalhe" class="detail"></p>
+        </section>
+      </div>
     </main>
     <script src="app.js"></script>
   </body>
