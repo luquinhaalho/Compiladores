@@ -57,7 +57,7 @@ h1 {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.8fr);
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin-top: 1.8rem;
   align-items: start;
@@ -168,6 +168,141 @@ button:disabled {
 
 .detail {
   min-height: 1.2rem;
+}
+
+.lexico h3 {
+  margin: 1.15rem 0 0.45rem;
+  font-size: 0.95rem;
+}
+
+.explicacao {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.contagem {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.contagem li {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #f6f1e8;
+  font-size: 0.82rem;
+}
+
+.codigo-colorido {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: #1c1915;
+  color: #f4efe6;
+  border-radius: 12px;
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.tok-PALAVRA_RESERVADA {
+  color: #7dcec9;
+  font-weight: 700;
+}
+
+.tok-IDENTIFICADOR {
+  color: #f7f3ea;
+}
+
+.tok-LITERAL_INTEIRO,
+.tok-LITERAL_REAL {
+  color: #e2b15a;
+}
+
+.tok-OPERADOR {
+  color: #e38b73;
+}
+
+.tok-DELIMITADOR {
+  color: #b7ad9e;
+}
+
+.tok-erro {
+  background: var(--danger);
+  color: #fff;
+  border-radius: 3px;
+}
+
+.codigo-colorido .is-current {
+  outline: 2px solid #fffdf8;
+  outline-offset: 2px;
+}
+
+.passo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.85rem;
+}
+
+.passo p {
+  flex: 1 1 16rem;
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.passo button {
+  margin-top: 0;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.tabela-rolagem {
+  margin-top: 0.9rem;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+caption {
+  margin-bottom: 0.4rem;
+  text-align: left;
+  font-weight: 700;
+}
+
+th,
+td {
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+tbody tr.is-current {
+  background: var(--accent-soft);
+}
+
+#erros-lexicos {
+  margin: 0.4rem 0 0;
+  padding-left: 1.15rem;
+  line-height: 1.45;
+}
+
+#erros-lexicos .is-current {
+  background: var(--danger-soft);
+  border-radius: 6px;
 }
 
 @media (max-width: 800px) {

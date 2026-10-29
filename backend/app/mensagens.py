@@ -11,10 +11,7 @@ MENSAGEM_BRANCO = (
 MENSAGEM_REQUISICAO_INVALIDA = (
     'A requisição é inválida. Envie um JSON com o campo "codigo" contendo o texto do programa.'
 )
-MENSAGEM_RECEBIDO = (
-    "Código recebido com sucesso. "
-    "A análise léxica, sintática e semântica ainda não está disponível nesta versão."
-)
+MENSAGEM_RECEBIDO = "O código possui conteúdo e pode seguir para a análise léxica."
 MENSAGEM_INESPERADA = (
     "Ocorreu um erro inesperado ao processar o código. Tente novamente."
 )

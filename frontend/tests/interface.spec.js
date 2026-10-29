@@ -55,10 +55,12 @@ test("envia o código editado e preserva o texto no editor", async ({ page }) =>
   await editor.fill(codigo);
   await page.getByRole("button", { name: "Analisar" }).click();
 
-  await expect(page.getByRole("status")).toContainText("Código recebido com sucesso");
+  await expect(page.getByRole("status")).toContainText("Análise léxica concluída");
   await expect(page.locator("#resultado-detalhe")).toHaveText(
     codigo.length + " caracteres recebidos."
   );
+  await expect(page.getByRole("table")).toContainText("nome");
+  await expect(page.locator("#erros-lexicos")).toContainText("Nenhum erro léxico");
   await expect(editor).toHaveValue(codigo);
   await expect(page.getByRole("button", { name: "Analisar" })).toBeEnabled();
 });
@@ -83,6 +85,32 @@ test("explica quando o servidor não responde", async ({ page }) => {
   await expect(page.getByRole("status")).toHaveText(MENSAGEM_COMUNICACAO);
   await expect(page.getByRole("button", { name: "Analisar" })).toBeEnabled();
   await expect(page.getByLabel("Código-fonte")).toHaveValue("int numero = 10;\n");
+});
+
+test("mostra os tokens e avança o passo a passo", async ({ page }) => {
+  await page.getByLabel("Código-fonte").fill("int numero = 10;\n");
+  await page.getByRole("button", { name: "Analisar" }).click();
+
+  await expect(page.locator("#explicacao-lexica")).toContainText("lexema");
+  await expect(page.getByRole("table")).toContainText("Palavra reservada");
+  await expect(page.getByRole("table")).toContainText("numero");
+  await expect(page.locator("#passo-texto")).toContainText("int");
+  await expect(page.locator("#passo-texto")).toContainText("palavra reservada");
+
+  await page.getByRole("button", { name: "Próximo passo" }).click();
+  await expect(page.locator("#passo-texto")).toContainText("numero");
+  await expect(page.locator("#passo-texto")).toContainText("identificador");
+});
+
+test("mostra o erro léxico sem apagar os tokens válidos", async ({ page }) => {
+  await page.getByLabel("Código-fonte").fill("int a = 1 @ 2;\n");
+  await page.getByRole("button", { name: "Analisar" }).click();
+
+  await expect(page.getByRole("status")).toContainText("1 erro léxico");
+  await expect(page.locator("#erros-lexicos")).toContainText("não reconhecido");
+  await expect(page.locator("#erros-lexicos")).toContainText("@");
+  await expect(page.getByRole("table")).toContainText("int");
+  await expect(page.getByRole("button", { name: "Analisar" })).toBeEnabled();
 });
 
 test("mostra uma mensagem genérica quando o servidor falha", async ({ page }) => {

@@ -53,7 +53,10 @@ def test_compose_entrega_hello_e_analise() -> None:
             corpo = json.load(resposta)
             assert resposta.status == 200
         assert corpo["recebido"] is True
+        assert corpo["sucesso"] is True
         assert corpo["caracteres"] == len(codigo)
+        assert any(token["lexema"] == "numero" for token in corpo["tokens"])
+        assert corpo["erros"] == []
 
         vazio = urllib.request.Request(
             "http://127.0.0.1:3000/api/analisar",

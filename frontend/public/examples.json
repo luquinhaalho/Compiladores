@@ -14,7 +14,19 @@
   {
     "id": "duas-declaracoes",
     "titulo": "Duas declarações",
-    "demonstra": "Duas variáveis, tipos int e double, e uma divisão. O subconjunto ainda não inclui estruturas condicionais.",
-    "codigo": "int total = 8;\ndouble media = total / 2;\n"
+    "demonstra": "Dois tipos, uma divisão e um literal real. O subconjunto ainda não inclui estruturas condicionais.",
+    "codigo": "int total = 8;\ndouble media = total / 2.0;\n"
+  },
+  {
+    "id": "booleano",
+    "titulo": "Comentário e boolean",
+    "demonstra": "Comentário de linha ignorado pelo scanner, tipo boolean e a palavra reservada true.",
+    "codigo": "// quantidade de itens\nboolean ativo = true;\n"
+  },
+  {
+    "id": "erro-lexico",
+    "titulo": "Erro léxico proposital",
+    "demonstra": "O caractere @ não pertence ao subconjunto e deve aparecer como erro, sem impedir o reconhecimento dos outros tokens.",
+    "codigo": "int valor = 10 @ 2;\n"
   }
 ]

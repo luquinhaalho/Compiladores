@@ -1,9 +1,9 @@
 """API do laboratório de compiladores.
 
-A segunda etapa recebe o código-fonte, valida a entrada e devolve uma
-resposta estruturada. A análise léxica, sintática e semântica fica para
-as etapas seguintes. A rota ``GET /api/hello`` permanece como prova de vida
-da primeira etapa.
+A entrada continua sendo validada como na segunda etapa. Quando o texto tem
+conteúdo, o scanner produz tokens e erros léxicos. A análise sintática e a
+semântica ficam para as etapas seguintes. A rota ``GET /api/hello`` permanece
+como prova de vida da primeira etapa.
 """
 
 import logging
@@ -16,6 +16,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.lexer import Token, analisar_lexico, mensagem_analise
 from app.mensagens import MENSAGEM_INESPERADA, MENSAGEM_REQUISICAO_INVALIDA
 from app.validacao import classificar_codigo, mensagem_para
 
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Compiladores — API",
     description="Laboratório educacional de AST para um subconjunto didático de Java.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 app.add_middleware(
@@ -39,10 +40,28 @@ class PedidoAnalise(BaseModel):
     codigo: str = Field(min_length=0)
 
 
+class TokenResposta(BaseModel):
+    tipo: str
+    lexema: str
+    linha: int
+    coluna: int
+
+
+class ErroResposta(BaseModel):
+    tipo: str
+    lexema: str
+    linha: int
+    coluna: int
+    mensagem: str
+
+
 class RespostaAnalise(BaseModel):
     recebido: bool
     mensagem: str
     caracteres: int | None = None
+    sucesso: bool | None = None
+    tokens: list[TokenResposta] | None = None
+    erros: list[ErroResposta] | None = None
 
 
 @app.exception_handler(RequestValidationError)
@@ -85,17 +104,39 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+def _token_resposta(token: Token) -> TokenResposta:
+    return TokenResposta(
+        tipo=token.tipo,
+        lexema=token.lexema,
+        linha=token.linha,
+        coluna=token.coluna,
+    )
+
+
 @app.post("/api/analisar", response_model=RespostaAnalise)
 def analisar(pedido: PedidoAnalise) -> RespostaAnalise:
-    """Recebe o programa-fonte e aplica só a validação inicial."""
+    """Valida o texto e, se houver conteúdo, executa o scanner."""
     situacao = classificar_codigo(pedido.codigo)
     if situacao != "aceito":
         return JSONResponse(
             status_code=400,
             content={"recebido": False, "mensagem": mensagem_para(situacao)},
         )
+    resultado = analisar_lexico(pedido.codigo)
     return RespostaAnalise(
         recebido=True,
-        mensagem=mensagem_para(situacao),
+        sucesso=resultado.sucesso,
+        mensagem=mensagem_analise(resultado),
         caracteres=len(pedido.codigo),
+        tokens=[_token_resposta(token) for token in resultado.tokens],
+        erros=[
+            ErroResposta(
+                tipo=erro.tipo,
+                lexema=erro.lexema,
+                linha=erro.linha,
+                coluna=erro.coluna,
+                mensagem=erro.mensagem,
+            )
+            for erro in resultado.erros
+        ],
     )

@@ -50,6 +50,39 @@
             O resultado da solicitação aparece aqui.
           </p>
           <p id="resultado-detalhe" class="detail"></p>
+
+          <div id="painel-lexico" class="lexico" hidden>
+            <p id="explicacao-lexica" class="explicacao">
+              Um <strong>token</strong> é uma unidade mínima com significado,
+              como uma palavra reservada ou um operador. O <strong>lexema</strong>
+              é o texto exato que o scanner leu. A linha e a coluna indicam onde
+              esse trecho começa.
+            </p>
+            <ul id="contagem" class="contagem"></ul>
+            <h3>Código com os lexemas destacados</h3>
+            <pre id="codigo-colorido" class="codigo-colorido"></pre>
+            <div class="passo">
+              <button type="button" id="passo-anterior">Passo anterior</button>
+              <p id="passo-texto"></p>
+              <button type="button" id="passo-proximo">Próximo passo</button>
+            </div>
+            <div class="tabela-rolagem">
+              <table>
+                <caption>Tokens reconhecidos</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Tipo</th>
+                    <th scope="col">Lexema</th>
+                    <th scope="col">Linha</th>
+                    <th scope="col">Coluna</th>
+                  </tr>
+                </thead>
+                <tbody id="tokens-corpo"></tbody>
+              </table>
+            </div>
+            <h3>Erros léxicos</h3>
+            <ul id="erros-lexicos"></ul>
+          </div>
         </section>
       </div>
     </main>

@@ -1,6 +1,6 @@
 # Compiladores — visualização de AST
 
-Software educacional para experimentar, em etapas, a geração e a visualização de árvores de sintaxe abstrata (AST). Nesta versão o estudante escreve ou escolhe um programa, pede o processamento e vê a resposta da aplicação. A análise léxica, sintática e semântica ainda não é feita.
+Software educacional para experimentar, em etapas, a geração e a visualização de árvores de sintaxe abstrata (AST). Nesta versão o estudante escreve ou escolhe um programa em um subconjunto de Java, pede a análise e vê os tokens reconhecidos pelo scanner. A análise sintática e a semântica ainda não são feitas.
 
 ## Linguagem e subconjunto didático
 
@@ -26,24 +26,45 @@ factor      = number | identifier | "(" expression ")" | "-" factor ;
 
 Java foi escolhida porque é uma linguagem orientada a objetos com sintaxe rica. Tipos, declarações e operadores produzem nós de naturezas diferentes na AST, o que ajuda a separar árvore concreta e árvore abstrata. O subconjunto começa pequeno para que cada fase do compilador possa ser estudada isoladamente.
 
+O vocabulário que o scanner reconhece está em [docs/escopo-lexico.md](docs/escopo-lexico.md). Em resumo:
+
+| Categoria | Exemplos |
+|---|---|
+| Palavras reservadas | `int`, `double`, `boolean`, `true`, `false` |
+| Identificadores | `numero`, `resultado`, `_x1` |
+| Literais | `10`, `0`, `2.5` |
+| Operadores | `+`, `-`, `*`, `/`, `=` |
+| Delimitadores | `(`, `)`, `;` |
+| Comentários, ignorados | `// linha` e `/* bloco */` |
+
+## Scanner
+
+O analisador léxico está em `backend/app/lexer.py`. É um laço escrito em Python, no mesmo processo do FastAPI, sem gerador nem dependência nova. O subconjunto cabe em um único módulo, e o estudante pode ler a varredura caractere a caractere antes de partir para o parser.
+
+Cada token traz `tipo`, `lexema`, `linha` e `coluna`. Espaços e comentários fechados não viram token. Um caractere ou uma sequência fora do subconjunto gera `ERRO_LEXICO` com uma mensagem didática, e a leitura continua. Um programa sintaticamente inválido, mas formado por tokens conhecidos, é tokenizado normalmente.
+
 ## O que a interface faz
 
 A tela em [http://localhost:3000](http://localhost:3000) identifica o laboratório e a linguagem Java. Ela oferece:
 
 - um campo monoespaçado para escrever, colar e editar o código-fonte;
-- uma lista com três exemplos, que substituem o texto do campo e podem ser editados depois;
-- o botão **Analisar**, que envia o código ao backend;
-- uma área de resultado com a mensagem da validação ou da falha de comunicação.
+- uma lista de exemplos, que substituem o texto do campo e podem ser editados depois;
+- o botão **Analisar**, que envia o código ao backend e aciona o scanner;
+- a mensagem de validação ou de falha de comunicação;
+- a contagem por categoria, o código com os lexemas coloridos, um passo a passo e a tabela de tokens;
+- a lista de erros léxicos, com linha e coluna.
 
-O código permanece no campo depois do envio. Entradas com erro proposital são aceitas quando têm algum texto: o parser ainda não existe.
+O código permanece no campo depois do envio. A tabela explica a diferença entre token e lexema, e os botões **Passo anterior** e **Próximo passo** percorrem a varredura na ordem em que o scanner encontrou cada trecho. Em telas estreitas, a tabela rola na horizontal.
 
 ### Exemplos disponíveis
 
 | Exemplo | Código | Construção demonstrada |
 |---|---|---|
-| Declaração e inicialização | `int numero = 10;` | Variável `int` com literal inteiro |
+| Declaração e inicialização | `int numero = 10;` | Palavra reservada, identificador, atribuição, inteiro e `;` |
 | Expressão aritmética | `int resultado = (10 + 5) * 2;` | Soma, multiplicação e parênteses |
-| Duas declarações | `int total = 8;` e `double media = total / 2;` | Dois tipos e uma divisão |
+| Duas declarações | `int total = 8;` e `double media = total / 2.0;` | Dois tipos, divisão e literal real |
+| Comentário e boolean | `boolean ativo = true;` | Comentário de linha ignorado e as palavras `boolean` e `true` |
+| Erro léxico proposital | `int valor = 10 @ 2;` | O `@` vira erro e os demais tokens continuam na tabela |
 
 Os textos ficam em `frontend/public/examples.json`. Estruturas condicionais ficam de fora porque ainda não pertencem ao subconjunto.
 
@@ -52,7 +73,7 @@ Os textos ficam em `frontend/public/examples.json`. Estruturas condicionais fica
 | Parte | Tecnologia |
 |---|---|
 | Frontend | HTML, CSS e JavaScript, servidos por Nginx |
-| Backend | Python 3.12 e FastAPI |
+| Backend | Python 3.12, FastAPI e o scanner em `app/lexer.py` |
 | Testes da API | pytest |
 | Testes da interface | Playwright, com o Google Chrome quando ele está instalado |
 | Execução | Docker Compose |
@@ -69,15 +90,49 @@ Pedido:
 { "codigo": "int numero = 10;\n" }
 ```
 
-Código recebido (`200`):
+Código tokenizado sem erro léxico (`200`):
 
 ```json
 {
   "recebido": true,
-  "mensagem": "Código recebido com sucesso. A análise léxica, sintática e semântica ainda não está disponível nesta versão.",
-  "caracteres": 18
+  "sucesso": true,
+  "mensagem": "Análise léxica concluída. 5 tokens reconhecidos. A análise sintática ainda não está disponível nesta versão.",
+  "caracteres": 17,
+  "tokens": [
+    { "tipo": "PALAVRA_RESERVADA", "lexema": "int", "linha": 1, "coluna": 1 },
+    { "tipo": "IDENTIFICADOR", "lexema": "numero", "linha": 1, "coluna": 5 },
+    { "tipo": "OPERADOR", "lexema": "=", "linha": 1, "coluna": 12 },
+    { "tipo": "LITERAL_INTEIRO", "lexema": "10", "linha": 1, "coluna": 14 },
+    { "tipo": "DELIMITADOR", "lexema": ";", "linha": 1, "coluna": 16 }
+  ],
+  "erros": []
 }
 ```
+
+Erro léxico (`200`, com `sucesso` falso). O HTTP continua 200 porque a requisição foi compreendida; o problema está no programa, não no transporte:
+
+```json
+{
+  "recebido": true,
+  "sucesso": false,
+  "mensagem": "A análise léxica encontrou 1 erro léxico. Os trechos válidos foram tokenizados mesmo assim. A análise sintática ainda não está disponível nesta versão.",
+  "tokens": [
+    { "tipo": "IDENTIFICADOR", "lexema": "a", "linha": 1, "coluna": 1 },
+    { "tipo": "IDENTIFICADOR", "lexema": "b", "linha": 1, "coluna": 5 }
+  ],
+  "erros": [
+    {
+      "tipo": "ERRO_LEXICO",
+      "lexema": "@",
+      "linha": 1,
+      "coluna": 3,
+      "mensagem": "Erro léxico na linha 1, coluna 3: caractere não reconhecido '@'. Verifique se ele faz parte do subconjunto suportado."
+    }
+  ]
+}
+```
+
+O exemplo acima corresponde à entrada `a @ b`, que ainda produz os identificadores `a` e `b` em `tokens`.
 
 Entrada vazia ou só com espaços (`400`):
 
@@ -160,7 +215,7 @@ python -m venv .venv
 .venv\Scripts\python -m pytest
 ```
 
-No Linux ou no macOS, o executável fica em `.venv/bin/python`. A suíte padrão não sobe o Docker. Ela cobre a classificação da entrada, o contrato de `POST /api/analisar`, os exemplos e a rota `GET /api/hello`.
+No Linux ou no macOS, o executável fica em `.venv/bin/python`. A suíte padrão não sobe o Docker. Ela cobre o scanner, a classificação da entrada, o contrato de `POST /api/analisar`, os exemplos e a rota `GET /api/hello`.
 
 Interface, na pasta `frontend`:
 
@@ -178,7 +233,7 @@ Implantação, com o daemon do Docker em execução, a partir de `backend`:
 .venv\Scripts\python -m pytest -m deploy --override-ini="addopts="
 ```
 
-Esse teste constrói as imagens, espera o healthcheck, envia um programa e uma entrada em branco pela porta 3000 e derruba os contêineres ao final.
+Esse teste constrói as imagens, espera o healthcheck, envia um programa pela porta 3000, confere o token `numero`, recusa uma entrada em branco e derruba os contêineres ao final.
 
 ## Estrutura do repositório
 
@@ -186,6 +241,7 @@ Esse teste constrói as imagens, espera o healthcheck, envia um programa e uma e
 .
 ├── backend/
 │   ├── app/
+│   │   ├── lexer.py
 │   │   ├── main.py
 │   │   ├── mensagens.py
 │   │   └── validacao.py
@@ -195,6 +251,7 @@ Esse teste constrói as imagens, espera o healthcheck, envia um programa e uma e
 │   ├── public/
 │   ├── tests/interface.spec.js
 │   └── Dockerfile
+├── docs/escopo-lexico.md
 ├── docs/testes.md
 ├── docker-compose.yml
 └── README.md
@@ -202,7 +259,8 @@ Esse teste constrói as imagens, espera o healthcheck, envia um programa e uma e
 
 ## Limitações desta versão
 
-- Não há analisador léxico, sintático nem semântico, e nenhuma AST é desenhada.
-- Qualquer texto que não seja vazio nem só espaços é aceito, inclusive código fora do subconjunto.
+- Não há analisador sintático nem semântico, e nenhuma AST é desenhada. Tokens válidos em uma ordem inválida são aceitos pelo scanner e serão recusados na etapa do parser.
+- Não há cadeias, caracteres entre aspas, operadores compostos (`==`, `<=`, `++`), comandos `if`/`while` nem identificadores com acento.
+- Literais reais exigem dígitos dos dois lados do ponto. `007` é um inteiro decimal, não um octal.
 - Os testes de interface dependem de Node.js e de um navegador (Chrome instalado ou Chromium do Playwright).
 - O teste marcado com `deploy` altera o estado do Docker local e usa as portas 3000 e 5000.
