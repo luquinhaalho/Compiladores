@@ -79,7 +79,8 @@ npx playwright test
 ```
 
 - Resultado em 27 de outubro de 2026: 1 reprovado (daemon parado).
-- Em 25 de novembro de 2026 (Etapa 4): o CLI respondeu `Docker Desktop is unable to start`. O teste `deploy` ficou pendente. Backend (81) e interface (10) passaram sem Docker.
+- Em 25 de novembro de 2026 (Etapa 4, antes do daemon): `Docker Desktop is unable to start`; teste pendente.
+- Em 25 de novembro de 2026 (daemon ativo): **1 aprovado**, 81 desmarcados, em 10,70 s. Confirma `GET /api/hello`, tokenização de `int numero = 10;`, AST com `PROGRAMA` e recusa de entrada em branco pela porta 3000. Ambiente: Docker Engine 29.8.2 e Compose v5.5.1.
 
 ## Parser e AST — Etapa 4
 

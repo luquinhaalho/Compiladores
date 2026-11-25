@@ -606,7 +606,7 @@ async function solicitarAnalise() {
 
 async function carregarExemplos() {
   try {
-    const resposta = await fetch("examples.json");
+    const resposta = await fetch("examples.json", { cache: "no-store" });
     if (!resposta.ok) {
       throw new Error("HTTP " + resposta.status);
     }
