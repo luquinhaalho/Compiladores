@@ -148,7 +148,8 @@ test("pede explicacao a IA com o contexto do token", async ({ page }) => {
       body: JSON.stringify({
         sucesso: true,
         mensagem: "Explicação gerada por IA (Ollama / Llama 3.2).",
-        explicacao: "O lexema int e uma palavra reservada de tipo.",
+        explicacao:
+          "## Token\n\nO lexema **int** é uma `palavra reservada` de tipo.\n\n- Indica o tipo da variável\n- Não é um identificador",
         modelo: "llama3.2",
       }),
     });
@@ -159,7 +160,13 @@ test("pede explicacao a IA com o contexto do token", async ({ page }) => {
   await page.getByRole("button", { name: "Explicar" }).first().click();
 
   await expect(page.locator("#status-ia")).toContainText("Explicação gerada por IA");
+  await expect(page.locator("#caixa-resposta-ia")).toBeVisible();
   await expect(page.locator("#resposta-ia")).toContainText("palavra reservada");
+  await expect(page.locator("#resposta-ia strong")).toHaveText("int");
+  await expect(page.locator("#resposta-ia code")).toHaveText("palavra reservada");
+  await expect(page.locator("#resposta-ia li").first()).toContainText(
+    "Indica o tipo"
+  );
   expect(pedido.tipo).toBe("TOKEN");
   expect(pedido.contexto.token.lexema).toBe("int");
 });

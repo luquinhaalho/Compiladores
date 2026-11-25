@@ -46,9 +46,12 @@ const explicarTokenEl = document.getElementById("explicar-token");
 const perguntaIaEl = document.getElementById("pergunta-ia");
 const perguntarIaEl = document.getElementById("perguntar-ia");
 const statusIaEl = document.getElementById("status-ia");
+const caixaRespostaIaEl = document.getElementById("caixa-resposta-ia");
 const respostaIaEl = document.getElementById("resposta-ia");
+const copiarIaEl = document.getElementById("copiar-ia");
 
 let exemplos = [];
+let ultimaExplicacaoIa = "";
 let itensPasso = [];
 let passoAtual = -1;
 let codigoAtual = "";
@@ -89,8 +92,7 @@ function limparPainel() {
   ultimaAnalise = null;
   errosSintaticosAtuais = [];
   statusIaEl.textContent = "";
-  respostaIaEl.hidden = true;
-  respostaIaEl.textContent = "";
+  limparRespostaIa();
 }
 
 function rotulo(tipo) {
@@ -435,14 +437,170 @@ function preencherErrosSintaticos(erros) {
   }
 }
 
+function escaparHtml(texto) {
+  return String(texto)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function formatarInlineMarkdown(texto) {
+  let saida = escaparHtml(texto);
+  saida = saida.replace(/`([^`]+)`/g, "<code>$1</code>");
+  saida = saida.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+  saida = saida.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+  return saida;
+}
+
+function formatarExplicacaoIa(texto) {
+  const bruto = String(texto || "").replace(/\r\n/g, "\n").trim();
+  if (!bruto) {
+    return "";
+  }
+
+  const partes = [];
+  const comCodigo = bruto.split(/```([\s\S]*?)```/g);
+  for (let i = 0; i < comCodigo.length; i += 1) {
+    const trecho = comCodigo[i];
+    if (i % 2 === 1) {
+      const linhas = trecho.replace(/^\n|\n$/g, "").split("\n");
+      let codigo = trecho;
+      if (linhas.length > 1 && /^[a-zA-Z0-9_+-]+$/.test(linhas[0].trim())) {
+        codigo = linhas.slice(1).join("\n");
+      }
+      partes.push("<pre><code>" + escaparHtml(codigo.trimEnd()) + "</code></pre>");
+      continue;
+    }
+
+    const blocos = trecho.split(/\n{2,}/);
+    for (const bloco of blocos) {
+      const linhas = bloco.split("\n").map((linha) => linha.trimEnd());
+      const uteis = linhas.filter((linha) => linha.trim() !== "");
+      if (uteis.length === 0) {
+        continue;
+      }
+
+      const primeira = uteis[0].trim();
+      const titulo = primeira.match(/^(#{1,4})\s+(.+)$/);
+      if (titulo && uteis.length === 1) {
+        const nivel = Math.min(titulo[1].length + 1, 4);
+        partes.push(
+          "<h" +
+            nivel +
+            ">" +
+            formatarInlineMarkdown(titulo[2]) +
+            "</h" +
+            nivel +
+            ">"
+        );
+        continue;
+      }
+
+      if (uteis.every((linha) => /^[-*]\s+/.test(linha.trim()))) {
+        const itens = uteis
+          .map(
+            (linha) =>
+              "<li>" +
+              formatarInlineMarkdown(linha.trim().replace(/^[-*]\s+/, "")) +
+              "</li>"
+          )
+          .join("");
+        partes.push("<ul>" + itens + "</ul>");
+        continue;
+      }
+
+      if (uteis.every((linha) => /^\d+\.\s+/.test(linha.trim()))) {
+        const itens = uteis
+          .map(
+            (linha) =>
+              "<li>" +
+              formatarInlineMarkdown(linha.trim().replace(/^\d+\.\s+/, "")) +
+              "</li>"
+          )
+          .join("");
+        partes.push("<ol>" + itens + "</ol>");
+        continue;
+      }
+
+      if (uteis.every((linha) => /^>\s?/.test(linha.trim()))) {
+        const citacao = uteis
+          .map((linha) => formatarInlineMarkdown(linha.trim().replace(/^>\s?/, "")))
+          .join("<br>");
+        partes.push("<blockquote><p>" + citacao + "</p></blockquote>");
+        continue;
+      }
+
+      if (uteis.length === 1 && titulo) {
+        const nivel = Math.min(titulo[1].length + 1, 4);
+        partes.push(
+          "<h" +
+            nivel +
+            ">" +
+            formatarInlineMarkdown(titulo[2]) +
+            "</h" +
+            nivel +
+            ">"
+        );
+        continue;
+      }
+
+      const htmlLinhas = [];
+      for (const linha of uteis) {
+        const soTitulo = linha.trim().match(/^(#{1,4})\s+(.+)$/);
+        if (soTitulo) {
+          if (htmlLinhas.length) {
+            partes.push("<p>" + htmlLinhas.join("<br>") + "</p>");
+            htmlLinhas.length = 0;
+          }
+          const nivel = Math.min(soTitulo[1].length + 1, 4);
+          partes.push(
+            "<h" +
+              nivel +
+              ">" +
+              formatarInlineMarkdown(soTitulo[2]) +
+              "</h" +
+              nivel +
+              ">"
+          );
+        } else {
+          htmlLinhas.push(formatarInlineMarkdown(linha.trim()));
+        }
+      }
+      if (htmlLinhas.length) {
+        partes.push("<p>" + htmlLinhas.join("<br>") + "</p>");
+      }
+    }
+  }
+
+  return partes.join("");
+}
+
+function limparRespostaIa() {
+  ultimaExplicacaoIa = "";
+  caixaRespostaIaEl.hidden = true;
+  respostaIaEl.hidden = false;
+  respostaIaEl.innerHTML = "";
+  copiarIaEl.textContent = "Copiar";
+}
+
+function mostrarRespostaIa(texto) {
+  ultimaExplicacaoIa = texto;
+  const html = formatarExplicacaoIa(texto);
+  respostaIaEl.hidden = false;
+  respostaIaEl.innerHTML = html || "<p>" + escaparHtml(texto) + "</p>";
+  caixaRespostaIaEl.hidden = false;
+  copiarIaEl.textContent = "Copiar";
+  caixaRespostaIaEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 async function solicitarExplicacao(tipo, pergunta, contexto) {
   if (iaOcupada) {
     return;
   }
   iaOcupada = true;
   statusIaEl.textContent = "Consultando o Ollama (Llama 3.2)…";
-  respostaIaEl.hidden = true;
-  respostaIaEl.textContent = "";
+  limparRespostaIa();
   perguntarIaEl.disabled = true;
   explicarNoEl.disabled = true;
   explicarTokenEl.disabled = true;
@@ -470,8 +628,7 @@ async function solicitarExplicacao(tipo, pergunta, contexto) {
     }
     statusIaEl.textContent = dados.mensagem;
     if (dados.sucesso && dados.explicacao) {
-      respostaIaEl.hidden = false;
-      respostaIaEl.textContent = dados.explicacao;
+      mostrarRespostaIa(dados.explicacao);
     }
   } catch (_erro) {
     statusIaEl.textContent = MENSAGEM_COMUNICACAO;
@@ -667,6 +824,17 @@ perguntarIaEl.addEventListener("click", () => {
     ast: astAtual,
     errosSintaticos: errosSintaticosAtuais,
   });
+});
+copiarIaEl.addEventListener("click", async () => {
+  if (!ultimaExplicacaoIa) {
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(ultimaExplicacaoIa);
+    copiarIaEl.textContent = "Copiado";
+  } catch (_erro) {
+    copiarIaEl.textContent = "Falhou";
+  }
 });
 
 formEl.addEventListener("submit", (evento) => {

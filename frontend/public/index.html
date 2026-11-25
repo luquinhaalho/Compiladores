@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Compiladores — AST</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=7" />
   </head>
   <body>
     <main class="shell">
@@ -128,12 +128,22 @@
               ></textarea>
               <button type="button" id="perguntar-ia">Perguntar à IA</button>
               <p id="status-ia" class="detail" role="status" aria-live="polite"></p>
-              <pre id="resposta-ia" class="resposta-ia" hidden></pre>
+              <div id="caixa-resposta-ia" class="caixa-resposta-ia" hidden>
+                <div class="caixa-resposta-ia-cabecalho">
+                  <h4>Explicação gerada</h4>
+                  <button type="button" id="copiar-ia" class="btn-ia">Copiar</button>
+                </div>
+                <article
+                  id="resposta-ia"
+                  class="resposta-ia"
+                  aria-label="Explicação da IA"
+                ></article>
+              </div>
             </div>
           </div>
         </section>
       </div>
     </main>
-    <script src="app.js?v=5"></script>
+    <script src="app.js?v=7"></script>
   </body>
 </html>
