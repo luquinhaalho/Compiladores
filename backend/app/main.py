@@ -16,7 +16,12 @@ from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.lexer import Token, analisar_lexico, mensagem_analise
-from app.mensagens import MENSAGEM_INESPERADA, MENSAGEM_REQUISICAO_INVALIDA
+from app.mensagens import (
+    MENSAGEM_IA_PERGUNTA,
+    MENSAGEM_INESPERADA,
+    MENSAGEM_REQUISICAO_INVALIDA,
+)
+from app.ollama_client import explicar
 from app.parser import ResultadoSintatico, analisar_sintatico, mensagem_sintatica
 from app.validacao import classificar_codigo, mensagem_para
 
@@ -25,7 +30,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Compiladores — API",
     description="Laboratório educacional de AST para um subconjunto didático de Java.",
-    version="0.4.0",
+    version="0.4.1",
 )
 
 app.add_middleware(
@@ -88,6 +93,20 @@ class RespostaAnalise(BaseModel):
     erros: list[ErroLexicoResposta] | None = None
     lexico: LexicoResposta | None = None
     sintatico: SintaticoResposta | None = None
+
+
+class PedidoExplicacao(BaseModel):
+    tipo: str = Field(min_length=1)
+    pergunta: str = Field(min_length=0)
+    codigo: str = ""
+    contexto: dict | None = None
+
+
+class RespostaExplicacao(BaseModel):
+    sucesso: bool
+    mensagem: str
+    explicacao: str | None = None
+    modelo: str | None = None
 
 
 @app.exception_handler(RequestValidationError)
@@ -200,3 +219,26 @@ def analisar(pedido: PedidoAnalise) -> RespostaAnalise:
         lexico=lexico_resposta,
         sintatico=sintatico_resposta,
     )
+
+
+@app.post("/api/ia/explicar", response_model=RespostaExplicacao)
+def ia_explicar(pedido: PedidoExplicacao) -> RespostaExplicacao:
+    """Pede uma explicação didática ao Ollama sem alterar o compilador."""
+    pergunta = pedido.pergunta.strip()
+    if not pergunta:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "sucesso": False,
+                "mensagem": MENSAGEM_IA_PERGUNTA,
+                "explicacao": None,
+                "modelo": None,
+            },
+        )
+    resultado = explicar(
+        tipo=pedido.tipo.strip() or "GERAL",
+        pergunta=pergunta,
+        codigo=pedido.codigo,
+        contexto=pedido.contexto,
+    )
+    return RespostaExplicacao(**resultado)

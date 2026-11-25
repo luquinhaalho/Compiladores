@@ -40,6 +40,13 @@ const errosSintaticosEl = document.getElementById("erros-sintaticos");
 const expandirAstEl = document.getElementById("expandir-ast");
 const recolherAstEl = document.getElementById("recolher-ast");
 const exportarAstEl = document.getElementById("exportar-ast");
+const explicarNoEl = document.getElementById("explicar-no");
+const explicarErroSintaticoEl = document.getElementById("explicar-erro-sintatico");
+const explicarTokenEl = document.getElementById("explicar-token");
+const perguntaIaEl = document.getElementById("pergunta-ia");
+const perguntarIaEl = document.getElementById("perguntar-ia");
+const statusIaEl = document.getElementById("status-ia");
+const respostaIaEl = document.getElementById("resposta-ia");
 
 let exemplos = [];
 let itensPasso = [];
@@ -47,6 +54,9 @@ let passoAtual = -1;
 let codigoAtual = "";
 let astAtual = null;
 let noSelecionado = null;
+let ultimaAnalise = null;
+let errosSintaticosAtuais = [];
+let iaOcupada = false;
 
 function mostrarResultado(texto, tipo, detalhe) {
   resultadoEl.textContent = texto;
@@ -76,6 +86,11 @@ function limparPainel() {
   astTextualEl.textContent = "";
   errosSintaticosEl.replaceChildren();
   statusSintaticoEl.textContent = "";
+  ultimaAnalise = null;
+  errosSintaticosAtuais = [];
+  statusIaEl.textContent = "";
+  respostaIaEl.hidden = true;
+  respostaIaEl.textContent = "";
 }
 
 function rotulo(tipo) {
@@ -169,7 +184,7 @@ function preencherTabela(tokens) {
   if (tokens.length === 0) {
     const linha = document.createElement("tr");
     const celula = document.createElement("td");
-    celula.colSpan = 4;
+    celula.colSpan = 5;
     celula.textContent = "Nenhum token reconhecido.";
     linha.append(celula);
     corpoEl.append(linha);
@@ -183,6 +198,14 @@ function preencherTabela(tokens) {
       celula.textContent = String(valor);
       linha.append(celula);
     }
+    const acao = document.createElement("td");
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "btn-ia";
+    botao.textContent = "Explicar";
+    botao.addEventListener("click", () => explicarToken(token));
+    acao.append(botao);
+    linha.append(acao);
     corpoEl.append(linha);
   }
 }
@@ -397,6 +420,7 @@ function renderizarAst(ast) {
 }
 
 function preencherErrosSintaticos(erros) {
+  errosSintaticosAtuais = erros || [];
   errosSintaticosEl.replaceChildren();
   if (!erros || erros.length === 0) {
     const item = document.createElement("li");
@@ -409,6 +433,99 @@ function preencherErrosSintaticos(erros) {
     item.textContent = erro.mensagem;
     errosSintaticosEl.append(item);
   }
+}
+
+async function solicitarExplicacao(tipo, pergunta, contexto) {
+  if (iaOcupada) {
+    return;
+  }
+  iaOcupada = true;
+  statusIaEl.textContent = "Consultando o Ollama (Llama 3.2)…";
+  respostaIaEl.hidden = true;
+  respostaIaEl.textContent = "";
+  perguntarIaEl.disabled = true;
+  explicarNoEl.disabled = true;
+  explicarTokenEl.disabled = true;
+  explicarErroSintaticoEl.disabled = true;
+  try {
+    const resposta = await fetch("/api/ia/explicar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tipo,
+        pergunta,
+        codigo: codigoAtual,
+        contexto: contexto || null,
+      }),
+    });
+    let dados = null;
+    try {
+      dados = await resposta.json();
+    } catch (_erro) {
+      dados = null;
+    }
+    if (!dados || typeof dados.mensagem !== "string") {
+      statusIaEl.textContent = MENSAGEM_COMUNICACAO;
+      return;
+    }
+    statusIaEl.textContent = dados.mensagem;
+    if (dados.sucesso && dados.explicacao) {
+      respostaIaEl.hidden = false;
+      respostaIaEl.textContent = dados.explicacao;
+    }
+  } catch (_erro) {
+    statusIaEl.textContent = MENSAGEM_COMUNICACAO;
+  } finally {
+    iaOcupada = false;
+    perguntarIaEl.disabled = false;
+    explicarNoEl.disabled = false;
+    explicarTokenEl.disabled = false;
+    explicarErroSintaticoEl.disabled = false;
+  }
+}
+
+function explicarToken(token) {
+  const pergunta =
+    "Explique o que é um " +
+    rotulo(token.tipo).toLowerCase() +
+    " na linguagem analisada e a função do lexema '" +
+    token.lexema +
+    "' no código apresentado.";
+  solicitarExplicacao("TOKEN", pergunta, {
+    token,
+    tokens: ultimaAnalise ? ultimaAnalise.tokens : [],
+  });
+}
+
+function explicarNoSelecionado() {
+  if (!noSelecionado) {
+    statusIaEl.textContent =
+      "Selecione um nó da AST antes de pedir a explicação à IA.";
+    return;
+  }
+  const pergunta =
+    "Explique o nó " +
+    noSelecionado.tipo +
+    " da AST e como ele se relaciona com os filhos e com o código-fonte.";
+  solicitarExplicacao("AST", pergunta, {
+    no: noSelecionado,
+    ast: astAtual,
+    tokens: ultimaAnalise ? ultimaAnalise.tokens : [],
+  });
+}
+
+function explicarErroSintatico() {
+  if (!errosSintaticosAtuais.length) {
+    statusIaEl.textContent = "Não há erro sintático nesta análise para explicar.";
+    return;
+  }
+  const erro = errosSintaticosAtuais[0];
+  const pergunta =
+    "Explique este erro sintático do parser, a regra gramatical envolvida e como corrigir o código.";
+  solicitarExplicacao("ERRO_SINTATICO", pergunta, {
+    erro,
+    tokens: ultimaAnalise ? ultimaAnalise.tokens : [],
+  });
 }
 
 function renderizarSintatico(sintatico) {
@@ -438,6 +555,7 @@ function renderizarSintatico(sintatico) {
 
 function renderizarLexico(codigo, dados) {
   codigoAtual = codigo;
+  ultimaAnalise = dados;
   itensPasso = dados.tokens.concat(dados.erros).sort((a, b) => {
     return a.linha - b.linha || a.coluna - b.coluna;
   });
@@ -520,6 +638,35 @@ exportarAstEl.addEventListener("click", () => {
   link.download = "ast.json";
   link.click();
   URL.revokeObjectURL(url);
+});
+
+explicarNoEl.addEventListener("click", explicarNoSelecionado);
+explicarErroSintaticoEl.addEventListener("click", explicarErroSintatico);
+explicarTokenEl.addEventListener("click", () => {
+  if (passoAtual < 0 || !itensPasso.length) {
+    statusIaEl.textContent =
+      "Analise um programa e selecione um passo/token antes de pedir a explicação.";
+    return;
+  }
+  const item = itensPasso[passoAtual];
+  if (item.tipo === "ERRO_LEXICO") {
+    statusIaEl.textContent =
+      "O passo atual é um erro léxico. Use um token válido da tabela.";
+    return;
+  }
+  explicarToken(item);
+});
+perguntarIaEl.addEventListener("click", () => {
+  const pergunta = perguntaIaEl.value.trim();
+  if (!pergunta) {
+    statusIaEl.textContent = "Digite uma pergunta para o assistente de IA.";
+    return;
+  }
+  solicitarExplicacao("GERAL", pergunta, {
+    tokens: ultimaAnalise ? ultimaAnalise.tokens : [],
+    ast: astAtual,
+    errosSintaticos: errosSintaticosAtuais,
+  });
 });
 
 formEl.addEventListener("submit", (evento) => {

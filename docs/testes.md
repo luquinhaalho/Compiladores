@@ -92,9 +92,17 @@ npx playwright test
 .venv\Scripts\python -m pytest
 ```
 
-- Resultado em 25 de novembro de 2026: **81 aprovados**, 0 reprovados, 1 desmarcado (`deploy`), 1 aviso do `TestClient`.
-- Interface (`npx playwright test`): **10 aprovados**, incluindo AST, clique no nó `MULTIPLICACAO`, erro sintático com regra e regressão das etapas 2–3.
+- Resultado em 25 de novembro de 2026 (após IA): **88 aprovados**, 0 reprovados, 1 desmarcado (`deploy`), 1 aviso do `TestClient`.
+- Interface (`npx playwright test`): **12 aprovados**, incluindo AST, botões de IA com rota mockada e regressão das etapas 2–3.
+
+## Ollama / Llama 3.2
+
+- Módulos: `backend/app/ollama_client.py`, `POST /api/ia/explicar`, botões da interface.
+- Tipo: unitário (cliente com HTTP falso), endpoint e interface com rota mockada.
+- A suíte padrão **não** exige o daemon do Ollama: as respostas são simuladas.
+- Após `docker compose up`, baixe o modelo com `docker compose exec ollama ollama pull llama3.2`.
+- Smoke test real (25 de novembro de 2026): `POST http://127.0.0.1:3000/api/ia/explicar` com tipo `AST` e modelo `llama3.2` → `sucesso=true` em ~34s (Nginx com `proxy_read_timeout 180s`).
 
 ## Limitações
 
-Ainda não há testes de análise semântica. O teste `deploy` depende do daemon Docker estar em execução.
+Ainda não há testes de análise semântica. O teste `deploy` depende do daemon Docker estar em execução. A primeira inferência do Llama 3.2 pode demorar; o volume `ollama_data` evita baixar o modelo de novo.

@@ -55,8 +55,8 @@ test("envia o código editado e preserva o texto no editor", async ({ page }) =>
   await editor.fill(codigo);
   await page.getByRole("button", { name: "Analisar" }).click();
 
-  await expect(page.getByRole("status")).toContainText("Análise léxica concluída");
-  await expect(page.getByRole("status")).toContainText("Análise sintática concluída");
+  await expect(page.locator("#resultado")).toContainText("Análise léxica concluída");
+  await expect(page.locator("#resultado")).toContainText("Análise sintática concluída");
   await expect(page.locator("#resultado-detalhe")).toHaveText(
     codigo.length + " caracteres recebidos."
   );
@@ -108,8 +108,8 @@ test("mostra o erro léxico sem apagar os tokens válidos", async ({ page }) => 
   await page.getByLabel("Código-fonte").fill("int a = 1 @ 2;\n");
   await page.getByRole("button", { name: "Analisar" }).click();
 
-  await expect(page.getByRole("status")).toContainText("1 erro léxico");
-  await expect(page.getByRole("status")).toContainText("não foi executada");
+  await expect(page.locator("#resultado")).toContainText("1 erro léxico");
+  await expect(page.locator("#resultado")).toContainText("não foi executada");
   await expect(page.locator("#erros-lexicos")).toContainText("não reconhecido");
   await expect(page.locator("#erros-lexicos")).toContainText("@");
   await expect(page.getByRole("table")).toContainText("int");
@@ -132,10 +132,58 @@ test("mostra erro sintático com a regra gramatical", async ({ page }) => {
   await page.getByLabel("Código-fonte").fill("int numero = 10\n");
   await page.getByRole("button", { name: "Analisar" }).click();
 
-  await expect(page.getByRole("status")).toContainText("encontrou um erro");
+  await expect(page.locator("#resultado")).toContainText("encontrou um erro");
   await expect(page.locator("#erros-sintaticos")).toContainText("';'");
   await expect(page.locator("#erros-sintaticos")).toContainText("Regra:");
   await expect(page.locator("#arvore-ast")).toBeEmpty();
+});
+
+test("pede explicacao a IA com o contexto do token", async ({ page }) => {
+  let pedido = null;
+  await page.route("**/api/ia/explicar", async (route) => {
+    pedido = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sucesso: true,
+        mensagem: "Explicação gerada por IA (Ollama / Llama 3.2).",
+        explicacao: "O lexema int e uma palavra reservada de tipo.",
+        modelo: "llama3.2",
+      }),
+    });
+  });
+
+  await page.getByLabel("Código-fonte").fill("int numero = 10;\n");
+  await page.getByRole("button", { name: "Analisar" }).click();
+  await page.getByRole("button", { name: "Explicar" }).first().click();
+
+  await expect(page.locator("#status-ia")).toContainText("Explicação gerada por IA");
+  await expect(page.locator("#resposta-ia")).toContainText("palavra reservada");
+  expect(pedido.tipo).toBe("TOKEN");
+  expect(pedido.contexto.token.lexema).toBe("int");
+});
+
+test("informa quando a IA esta indisponivel", async ({ page }) => {
+  await page.route("**/api/ia/explicar", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        sucesso: false,
+        mensagem: "O assistente de IA não está disponível no momento.",
+        explicacao: null,
+        modelo: "llama3.2",
+      }),
+    })
+  );
+
+  await page.getByLabel("Código-fonte").fill("int numero = 10;\n");
+  await page.getByRole("button", { name: "Analisar" }).click();
+  await page.getByRole("button", { name: "Explicar nó com IA" }).click();
+  await expect(page.locator("#status-ia")).toContainText(
+    "Selecione um nó da AST"
+  );
 });
 
 test("mostra uma mensagem genérica quando o servidor falha", async ({ page }) => {

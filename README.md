@@ -60,6 +60,7 @@ Em [http://localhost:3000](http://localhost:3000):
 |---|---|
 | Frontend | HTML, CSS e JavaScript (Nginx) |
 | Backend | Python 3.12, FastAPI, scanner e parser manuais |
+| Assistente | Ollama + Llama 3.2 (explicações didáticas) |
 | Testes | pytest e Playwright |
 | Execução | Docker Compose |
 
@@ -210,6 +211,62 @@ cd backend
 .venv\Scripts\python -m pytest -m deploy --override-ini="addopts="
 ```
 
+## Assistente de IA (Ollama / Llama 3.2)
+
+O Ollama roda como serviço no Docker Compose e o backend fala com ele em `http://ollama:11434`. O navegador **não** acessa o Ollama diretamente.
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `OLLAMA_BASE_URL` | `http://ollama:11434` | endereço interno do serviço |
+| `OLLAMA_MODEL` | `llama3.2` | modelo usado no `/api/chat` |
+| `OLLAMA_TIMEOUT_SECONDS` | `180` | tempo máximo da requisição |
+| `OLLAMA_NUM_PREDICT` | `256` | limite de tokens na resposta |
+
+### Subir e baixar o modelo
+
+```bash
+docker compose up --build -d
+docker compose exec ollama ollama pull llama3.2
+docker compose exec ollama ollama list
+```
+
+O volume `ollama_data` preserva o modelo entre recriações do contêiner. A análise léxica/sintática **não** depende do Ollama: se ele estiver offline, o compilador continua funcionando e a interface mostra uma mensagem didática.
+
+### Endpoint `POST /api/ia/explicar`
+
+```json
+{
+  "tipo": "AST",
+  "pergunta": "Por que a multiplicação aparece abaixo da adição?",
+  "codigo": "int resultado = 10 + 5 * 2;",
+  "contexto": {
+    "no": { "tipo": "MULTIPLICACAO", "atributos": { "operador": "*" } },
+    "ast": { "tipo": "PROGRAMA", "filhos": [] }
+  }
+}
+```
+
+Resposta de sucesso:
+
+```json
+{
+  "sucesso": true,
+  "mensagem": "Explicação gerada por IA (Ollama / Llama 3.2). …",
+  "explicacao": "…texto do modelo…",
+  "modelo": "llama3.2"
+}
+```
+
+### Funcionalidades na interface
+
+- **Explicar** na tabela de tokens;
+- **Explicar token atual** (passo a passo léxico);
+- **Explicar nó com IA** (nó selecionado na AST);
+- **Entender erro sintático com IA**;
+- caixa de pergunta livre ao professor virtual.
+
+A IA recebe o código e o contexto real do compilador. Ela não inventa a análise: o system prompt exige basear-se apenas nos dados enviados.
+
 ## Estrutura
 
 ```text
@@ -218,6 +275,7 @@ cd backend
 │   ├── lexer.py
 │   ├── parser.py
 │   ├── ast_nodes.py
+│   ├── ollama_client.py
 │   ├── main.py
 │   ├── mensagens.py
 │   └── validacao.py
@@ -237,7 +295,8 @@ cd backend
 - Não há `if`/`while`, chaves, operadores relacionais nem cadeias.
 - Só o primeiro erro sintático é reportado.
 - A árvore exibida é a AST, não a árvore de derivação concreta.
-- O diferencial com Ollama/Llama 3.2 **não** está nesta entrega.
+- O Llama 3.2 pode errar conceitualmente: a explicação é apoio, não resultado oficial.
+- Baixar o modelo exige rede e espaço em disco; o primeiro `ollama pull` pode demorar.
 
 ## Relação com a Etapa 5
 

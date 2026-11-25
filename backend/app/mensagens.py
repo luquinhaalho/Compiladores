@@ -15,3 +15,4 @@ MENSAGEM_RECEBIDO = "O código possui conteúdo e pode seguir para a análise l�
 MENSAGEM_INESPERADA = (
     "Ocorreu um erro inesperado ao processar o código. Tente novamente."
 )
+MENSAGEM_IA_PERGUNTA = "Informe uma pergunta para o assistente de IA."

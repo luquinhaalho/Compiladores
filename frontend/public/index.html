@@ -75,6 +75,7 @@
                     <th scope="col">Lexema</th>
                     <th scope="col">Linha</th>
                     <th scope="col">Coluna</th>
+                    <th scope="col">IA</th>
                   </tr>
                 </thead>
                 <tbody id="tokens-corpo"></tbody>
@@ -101,11 +102,38 @@
               <pre id="ast-textual" class="ast-textual" aria-label="AST em texto"></pre>
               <h3>Erros sintáticos</h3>
               <ul id="erros-sintaticos"></ul>
+              <div class="passo">
+                <button type="button" id="explicar-no">Explicar nó com IA</button>
+                <button type="button" id="explicar-erro-sintatico">
+                  Entender erro sintático com IA
+                </button>
+              </div>
+            </div>
+
+            <div id="painel-ia" class="painel-ia">
+              <h3>Assistente de IA (Ollama / Llama 3.2)</h3>
+              <p class="explicacao">
+                A IA explica os resultados do scanner e do parser. Ela
+                <strong>não</strong> substitui a análise do compilador. Trate a
+                resposta como apoio didático.
+              </p>
+              <div class="passo">
+                <button type="button" id="explicar-token">Explicar token atual</button>
+              </div>
+              <label for="pergunta-ia">Pergunta ao professor virtual</label>
+              <textarea
+                id="pergunta-ia"
+                rows="3"
+                placeholder="Ex.: Por que a multiplicação aparece abaixo da adição?"
+              ></textarea>
+              <button type="button" id="perguntar-ia">Perguntar à IA</button>
+              <p id="status-ia" class="detail" role="status" aria-live="polite"></p>
+              <pre id="resposta-ia" class="resposta-ia" hidden></pre>
             </div>
           </div>
         </section>
       </div>
     </main>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
   </body>
 </html>

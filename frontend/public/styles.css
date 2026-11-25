@@ -393,6 +393,52 @@ tbody tr.is-current {
   outline-offset: 1px;
 }
 
+.painel-ia {
+  margin-top: 1.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.painel-ia label {
+  display: block;
+  margin: 0.9rem 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.painel-ia textarea {
+  min-height: 88px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.painel-ia > button {
+  margin-top: 0.75rem;
+}
+
+.resposta-ia {
+  margin: 0.85rem 0 0;
+  padding: 0.95rem 1rem;
+  white-space: pre-wrap;
+  background: #eef6f5;
+  border-radius: 12px;
+  color: var(--ink);
+  font-family: "Segoe UI", Candara, "Trebuchet MS", sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.btn-ia {
+  margin: 0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 @media (max-width: 800px) {
   .workspace {
     grid-template-columns: 1fr;
