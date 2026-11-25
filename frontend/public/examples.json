@@ -26,7 +26,19 @@
   {
     "id": "erro-lexico",
     "titulo": "Erro léxico proposital",
-    "demonstra": "O caractere @ não pertence ao subconjunto e deve aparecer como erro, sem impedir o reconhecimento dos outros tokens.",
+    "demonstra": "O caractere @ não pertence ao subconjunto. O parser não roda enquanto houver erro léxico.",
     "codigo": "int valor = 10 @ 2;\n"
+  },
+  {
+    "id": "precedencia",
+    "titulo": "Precedência * sobre +",
+    "demonstra": "Na AST, a multiplicação fica abaixo da adição: 10 + (5 * 2).",
+    "codigo": "int resultado = 10 + 5 * 2;\n"
+  },
+  {
+    "id": "erro-sintatico",
+    "titulo": "Erro sintático proposital",
+    "demonstra": "Falta o ponto e vírgula. Os tokens são válidos, mas a gramática exige ';'.",
+    "codigo": "int numero = 10\n"
   }
 ]

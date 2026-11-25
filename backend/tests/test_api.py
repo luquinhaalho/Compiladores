@@ -22,7 +22,7 @@ def test_hello_e_health_continuam_disponiveis() -> None:
     assert health.json() == {"status": "ok"}
 
 
-def test_codigo_valido_devolve_tokens() -> None:
+def test_codigo_valido_devolve_tokens_e_ast() -> None:
     codigo = 'int resultado = (10 + 5) * 2; // "ação"'
     resposta = client.post("/api/analisar", json={"codigo": codigo})
     corpo = resposta.json()
@@ -36,12 +36,18 @@ def test_codigo_valido_devolve_tokens() -> None:
     assert [(item["tipo"], item["lexema"]) for item in corpo["tokens"]] == [
         (token.tipo, token.lexema) for token in esperado.tokens
     ]
+    assert corpo["lexico"]["sucesso"] is True
+    assert corpo["sintatico"]["executado"] is True
+    assert corpo["sintatico"]["sucesso"] is True
+    assert corpo["sintatico"]["ast"]["tipo"] == "PROGRAMA"
+    assert corpo["sintatico"]["ast"]["filhos"][0]["tipo"] == "DECLARACAO_VARIAVEL"
     assert "Análise léxica concluída" in corpo["mensagem"]
+    assert "Análise sintática concluída" in corpo["mensagem"]
     assert "Traceback" not in resposta.text
     assert "site-packages" not in resposta.text
 
 
-def test_erro_lexico_nao_interrompe_e_usa_http_200() -> None:
+def test_erro_lexico_nao_executa_o_parser() -> None:
     resposta = client.post("/api/analisar", json={"codigo": "int a = 1 @ 2;"})
     corpo = resposta.json()
 
@@ -52,7 +58,26 @@ def test_erro_lexico_nao_interrompe_e_usa_http_200() -> None:
     assert corpo["erros"][0]["tipo"] == "ERRO_LEXICO"
     assert corpo["erros"][0]["lexema"] == "@"
     assert "linha 1, coluna" in corpo["erros"][0]["mensagem"]
+    assert corpo["sintatico"]["executado"] is False
+    assert corpo["sintatico"]["ast"] is None
+    assert "não foi executada" in corpo["mensagem"]
     assert "Traceback" not in resposta.text
+
+
+def test_erro_sintatico_devolve_tokens_e_diagnostico() -> None:
+    resposta = client.post("/api/analisar", json={"codigo": "int numero = 10"})
+    corpo = resposta.json()
+
+    assert resposta.status_code == 200
+    assert corpo["sucesso"] is True
+    assert corpo["sintatico"]["executado"] is True
+    assert corpo["sintatico"]["sucesso"] is False
+    assert corpo["sintatico"]["ast"] is None
+    erro = corpo["sintatico"]["erros"][0]
+    assert erro["tipo"] == "ERRO_SINTATICO"
+    assert ";" in erro["esperado"]
+    assert "Regra:" in erro["mensagem"]
+    assert "encontrou um erro" in corpo["mensagem"]
 
 
 def test_entrada_vazia() -> None:

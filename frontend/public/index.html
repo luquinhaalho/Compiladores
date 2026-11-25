@@ -82,6 +82,26 @@
             </div>
             <h3>Erros léxicos</h3>
             <ul id="erros-lexicos"></ul>
+
+            <div id="painel-sintatico" class="sintatico" hidden>
+              <h3>Árvore sintática abstrata (AST)</h3>
+              <p id="explicacao-sintatica" class="explicacao">
+                A <strong>AST</strong> mostra a estrutura do programa depois que o
+                parser organiza os tokens. Ela omite detalhes da gramática (como
+                os não terminais intermediários) e mantém o essencial: declarações,
+                operações e literais. A análise semântica ainda não é feita.
+              </p>
+              <p id="status-sintatico" class="detail"></p>
+              <div class="passo">
+                <button type="button" id="expandir-ast">Expandir tudo</button>
+                <button type="button" id="recolher-ast">Recolher tudo</button>
+                <button type="button" id="exportar-ast">Exportar AST (JSON)</button>
+              </div>
+              <ul id="arvore-ast" class="arvore-ast" role="tree"></ul>
+              <pre id="ast-textual" class="ast-textual" aria-label="AST em texto"></pre>
+              <h3>Erros sintáticos</h3>
+              <ul id="erros-sintaticos"></ul>
+            </div>
           </div>
         </section>
       </div>

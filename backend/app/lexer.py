@@ -43,28 +43,22 @@ class ResultadoLexico:
 
 
 def mensagem_analise(resultado: ResultadoLexico) -> str:
-    """Resume o que o scanner fez, sem antecipar a análise sintática."""
+    """Resume o que o scanner fez."""
     quantidade_tokens = len(resultado.tokens)
     quantidade_erros = len(resultado.erros)
-    limite = "A análise sintática ainda não está disponível nesta versão."
     if quantidade_erros:
         palavra = "erro léxico" if quantidade_erros == 1 else "erros léxicos"
         return (
             f"A análise léxica encontrou {quantidade_erros} {palavra}. "
-            "Os trechos válidos foram tokenizados mesmo assim. "
-            + limite
+            "Os trechos válidos foram tokenizados mesmo assim."
         )
     if quantidade_tokens == 0:
         return (
             "Análise léxica concluída. Nenhum token foi produzido: "
-            "o texto contém apenas espaços ou comentários. "
-            + limite
+            "o texto contém apenas espaços ou comentários."
         )
     palavra = "token" if quantidade_tokens == 1 else "tokens"
-    return (
-        f"Análise léxica concluída. {quantidade_tokens} {palavra} reconhecidos. "
-        + limite
-    )
+    return f"Análise léxica concluída. {quantidade_tokens} {palavra} reconhecidos."
 
 
 def analisar_lexico(codigo: str) -> ResultadoLexico:

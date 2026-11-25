@@ -56,11 +56,13 @@ test("envia o código editado e preserva o texto no editor", async ({ page }) =>
   await page.getByRole("button", { name: "Analisar" }).click();
 
   await expect(page.getByRole("status")).toContainText("Análise léxica concluída");
+  await expect(page.getByRole("status")).toContainText("Análise sintática concluída");
   await expect(page.locator("#resultado-detalhe")).toHaveText(
     codigo.length + " caracteres recebidos."
   );
   await expect(page.getByRole("table")).toContainText("nome");
   await expect(page.locator("#erros-lexicos")).toContainText("Nenhum erro léxico");
+  await expect(page.locator("#arvore-ast")).toContainText("DECLARACAO_VARIAVEL");
   await expect(editor).toHaveValue(codigo);
   await expect(page.getByRole("button", { name: "Analisar" })).toBeEnabled();
 });
@@ -107,10 +109,33 @@ test("mostra o erro léxico sem apagar os tokens válidos", async ({ page }) => 
   await page.getByRole("button", { name: "Analisar" }).click();
 
   await expect(page.getByRole("status")).toContainText("1 erro léxico");
+  await expect(page.getByRole("status")).toContainText("não foi executada");
   await expect(page.locator("#erros-lexicos")).toContainText("não reconhecido");
   await expect(page.locator("#erros-lexicos")).toContainText("@");
   await expect(page.getByRole("table")).toContainText("int");
+  await expect(page.locator("#status-sintatico")).toContainText("Parser não executado");
   await expect(page.getByRole("button", { name: "Analisar" })).toBeEnabled();
+});
+
+test("mostra a AST e destaca o nó no código", async ({ page }) => {
+  await page.getByLabel("Código-fonte").fill("int resultado = 10 + 5 * 2;\n");
+  await page.getByRole("button", { name: "Analisar" }).click();
+
+  await expect(page.locator("#arvore-ast")).toContainText("MULTIPLICACAO");
+  await expect(page.locator("#ast-textual")).toContainText("ADICAO");
+  await page.getByRole("button", { name: /MULTIPLICACAO/ }).click();
+  await expect(page.locator("#status-sintatico")).toContainText("Regra:");
+  await expect(page.locator("#status-sintatico")).toContainText("expressao_mult");
+});
+
+test("mostra erro sintático com a regra gramatical", async ({ page }) => {
+  await page.getByLabel("Código-fonte").fill("int numero = 10\n");
+  await page.getByRole("button", { name: "Analisar" }).click();
+
+  await expect(page.getByRole("status")).toContainText("encontrou um erro");
+  await expect(page.locator("#erros-sintaticos")).toContainText("';'");
+  await expect(page.locator("#erros-sintaticos")).toContainText("Regra:");
+  await expect(page.locator("#arvore-ast")).toBeEmpty();
 });
 
 test("mostra uma mensagem genérica quando o servidor falha", async ({ page }) => {

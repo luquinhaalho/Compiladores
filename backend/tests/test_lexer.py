@@ -190,4 +190,3 @@ def test_mensagem_distingue_sucesso_comentario_e_erro() -> None:
     assert mensagem_analise(ok).startswith("Análise léxica concluída. 5 tokens")
     assert "Nenhum token foi produzido" in mensagem_analise(vazio)
     assert "1 erro léxico" in mensagem_analise(ruim)
-    assert "sintática ainda não está disponível" in mensagem_analise(ok)

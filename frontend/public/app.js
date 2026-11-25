@@ -32,10 +32,21 @@ const errosEl = document.getElementById("erros-lexicos");
 const passoTextoEl = document.getElementById("passo-texto");
 const passoAnteriorEl = document.getElementById("passo-anterior");
 const passoProximoEl = document.getElementById("passo-proximo");
+const painelSintaticoEl = document.getElementById("painel-sintatico");
+const statusSintaticoEl = document.getElementById("status-sintatico");
+const arvoreEl = document.getElementById("arvore-ast");
+const astTextualEl = document.getElementById("ast-textual");
+const errosSintaticosEl = document.getElementById("erros-sintaticos");
+const expandirAstEl = document.getElementById("expandir-ast");
+const recolherAstEl = document.getElementById("recolher-ast");
+const exportarAstEl = document.getElementById("exportar-ast");
 
 let exemplos = [];
 let itensPasso = [];
 let passoAtual = -1;
+let codigoAtual = "";
+let astAtual = null;
+let noSelecionado = null;
 
 function mostrarResultado(texto, tipo, detalhe) {
   resultadoEl.textContent = texto;
@@ -50,13 +61,21 @@ function mostrarResultado(texto, tipo, detalhe) {
 
 function limparPainel() {
   painelEl.hidden = true;
+  painelSintaticoEl.hidden = true;
   itensPasso = [];
   passoAtual = -1;
+  codigoAtual = "";
+  astAtual = null;
+  noSelecionado = null;
   contagemEl.replaceChildren();
   coloridoEl.replaceChildren();
   corpoEl.replaceChildren();
   errosEl.replaceChildren();
   passoTextoEl.textContent = "";
+  arvoreEl.replaceChildren();
+  astTextualEl.textContent = "";
+  errosSintaticosEl.replaceChildren();
+  statusSintaticoEl.textContent = "";
 }
 
 function rotulo(tipo) {
@@ -232,7 +251,193 @@ function atualizarPasso() {
   });
 }
 
+function rotuloNo(no) {
+  const atr = no.atributos || {};
+  if (atr.nome) {
+    return atr.nome;
+  }
+  if (atr.valor !== undefined) {
+    return String(atr.valor);
+  }
+  if (atr.operador) {
+    return atr.operador;
+  }
+  if (atr.tipoDado) {
+    return atr.tipoDado + " " + (atr.nome || "");
+  }
+  return "";
+}
+
+function textoAst(no, nivel) {
+  const indent = "  ".repeat(nivel);
+  const extra = rotuloNo(no);
+  let linha = indent + no.tipo;
+  if (extra) {
+    linha += ": " + extra;
+  }
+  linha += "\n";
+  for (const filho of no.filhos || []) {
+    linha += textoAst(filho, nivel + 1);
+  }
+  return linha;
+}
+
+function destacarTrechoNo(no) {
+  coloridoEl.querySelectorAll(".is-ast-selected").forEach((el) => {
+    el.classList.remove("is-ast-selected");
+  });
+  if (!no || !codigoAtual) {
+    return;
+  }
+  const inicio = indiceDaPosicao(codigoAtual, no.linha, no.coluna);
+  if (inicio < 0) {
+    return;
+  }
+  const fimLinha = no.linhaFim || no.linha;
+  const fimColuna = no.colunaFim || no.coluna;
+  let fim = indiceDaPosicao(codigoAtual, fimLinha, fimColuna);
+  if (fim < 0) {
+    fim = inicio;
+  } else {
+    fim += 1;
+  }
+  const spans = coloridoEl.querySelectorAll("span");
+  let cursor = 0;
+  for (const noTexto of coloridoEl.childNodes) {
+    if (noTexto.nodeType === Node.TEXT_NODE) {
+      cursor += noTexto.textContent.length;
+      continue;
+    }
+    if (noTexto.nodeType === Node.ELEMENT_NODE) {
+      const tamanho = noTexto.textContent.length;
+      const spanInicio = cursor;
+      const spanFim = cursor + tamanho;
+      if (spanFim > inicio && spanInicio < fim) {
+        noTexto.classList.add("is-ast-selected");
+      }
+      cursor = spanFim;
+    }
+  }
+  spans.length;
+}
+
+function selecionarNo(no, botao) {
+  noSelecionado = no;
+  arvoreEl.querySelectorAll(".no-ast").forEach((el) => {
+    el.classList.remove("is-selected");
+  });
+  if (botao) {
+    botao.classList.add("is-selected");
+  }
+  destacarTrechoNo(no);
+  if (no && no.regra) {
+    statusSintaticoEl.textContent =
+      "Nó " +
+      no.tipo +
+      " (linha " +
+      no.linha +
+      ", coluna " +
+      no.coluna +
+      "). Regra: " +
+      no.regra;
+  }
+}
+
+function criarItemArvore(no) {
+  const item = document.createElement("li");
+  item.setAttribute("role", "treeitem");
+  const botao = document.createElement("button");
+  botao.type = "button";
+  botao.className = "no-ast no-" + no.tipo;
+  const badge = document.createElement("span");
+  badge.className = "badge";
+  badge.textContent = no.tipo;
+  botao.append(badge);
+  const extra = rotuloNo(no);
+  if (extra) {
+    botao.append(document.createTextNode(" " + extra));
+  }
+  botao.append(
+    document.createTextNode("  L" + no.linha + ":C" + no.coluna)
+  );
+  botao.addEventListener("click", () => selecionarNo(no, botao));
+  item.append(botao);
+
+  if (no.filhos && no.filhos.length) {
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "passo";
+    toggle.style.margin = "0 0 0 0.25rem";
+    toggle.style.padding = "0.15rem 0.45rem";
+    toggle.textContent = "−";
+    const filhos = document.createElement("ul");
+    filhos.setAttribute("role", "group");
+    for (const filho of no.filhos) {
+      filhos.append(criarItemArvore(filho));
+    }
+    toggle.addEventListener("click", () => {
+      const oculto = filhos.hidden;
+      filhos.hidden = !oculto;
+      toggle.textContent = oculto ? "−" : "+";
+    });
+    item.insertBefore(toggle, botao);
+    item.append(filhos);
+  }
+  return item;
+}
+
+function renderizarAst(ast) {
+  arvoreEl.replaceChildren();
+  astTextualEl.textContent = "";
+  if (!ast) {
+    return;
+  }
+  arvoreEl.append(criarItemArvore(ast));
+  astTextualEl.textContent = textoAst(ast, 0).trimEnd();
+}
+
+function preencherErrosSintaticos(erros) {
+  errosSintaticosEl.replaceChildren();
+  if (!erros || erros.length === 0) {
+    const item = document.createElement("li");
+    item.textContent = "Nenhum erro sintático nesta análise.";
+    errosSintaticosEl.append(item);
+    return;
+  }
+  for (const erro of erros) {
+    const item = document.createElement("li");
+    item.textContent = erro.mensagem;
+    errosSintaticosEl.append(item);
+  }
+}
+
+function renderizarSintatico(sintatico) {
+  painelSintaticoEl.hidden = false;
+  if (!sintatico || sintatico.executado === false) {
+    statusSintaticoEl.textContent =
+      "Parser não executado: corrija os erros léxicos primeiro.";
+    arvoreEl.replaceChildren();
+    astTextualEl.textContent = "";
+    preencherErrosSintaticos([]);
+    return;
+  }
+  if (sintatico.sucesso) {
+    statusSintaticoEl.textContent =
+      "AST construída com sucesso. Clique em um nó para destacar o trecho no código.";
+    astAtual = sintatico.ast;
+    renderizarAst(sintatico.ast);
+    preencherErrosSintaticos([]);
+  } else {
+    statusSintaticoEl.textContent = "A AST não foi produzida por causa de erro sintático.";
+    astAtual = null;
+    arvoreEl.replaceChildren();
+    astTextualEl.textContent = "";
+    preencherErrosSintaticos(sintatico.erros || []);
+  }
+}
+
 function renderizarLexico(codigo, dados) {
+  codigoAtual = codigo;
   itensPasso = dados.tokens.concat(dados.erros).sort((a, b) => {
     return a.linha - b.linha || a.coluna - b.coluna;
   });
@@ -243,6 +448,7 @@ function renderizarLexico(codigo, dados) {
   preencherErros(dados.erros);
   passoAtual = itensPasso.length ? 0 : -1;
   atualizarPasso();
+  renderizarSintatico(dados.sintatico);
 }
 
 function preencherExemplos(lista) {
@@ -280,6 +486,40 @@ passoProximoEl.addEventListener("click", () => {
     passoAtual += 1;
     atualizarPasso();
   }
+});
+
+expandirAstEl.addEventListener("click", () => {
+  arvoreEl.querySelectorAll("ul").forEach((lista) => {
+    lista.hidden = false;
+  });
+  arvoreEl.querySelectorAll("li > button.passo").forEach((botao) => {
+    botao.textContent = "−";
+  });
+});
+
+recolherAstEl.addEventListener("click", () => {
+  arvoreEl.querySelectorAll(":scope > li ul").forEach((lista) => {
+    lista.hidden = true;
+  });
+  arvoreEl.querySelectorAll("li > button.passo").forEach((botao) => {
+    botao.textContent = "+";
+  });
+});
+
+exportarAstEl.addEventListener("click", () => {
+  if (!astAtual) {
+    statusSintaticoEl.textContent = "Não há AST para exportar nesta análise.";
+    return;
+  }
+  const blob = new Blob([JSON.stringify(astAtual, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "ast.json";
+  link.click();
+  URL.revokeObjectURL(url);
 });
 
 formEl.addEventListener("submit", (evento) => {
@@ -339,15 +579,20 @@ async function solicitarAnalise() {
       typeof dados.caracteres !== "number" ||
       typeof dados.sucesso !== "boolean" ||
       !Array.isArray(dados.tokens) ||
-      !Array.isArray(dados.erros)
+      !Array.isArray(dados.erros) ||
+      !dados.sintatico
     ) {
       mostrarResultado(MENSAGEM_INESPERADO, "erro");
       return;
     }
 
+    const okGeral =
+      dados.sucesso &&
+      dados.sintatico.executado !== false &&
+      dados.sintatico.sucesso === true;
     mostrarResultado(
       dados.mensagem,
-      dados.sucesso ? "ok" : "erro",
+      okGeral ? "ok" : "erro",
       dados.caracteres + " caracteres recebidos."
     );
     renderizarLexico(codigo, dados);

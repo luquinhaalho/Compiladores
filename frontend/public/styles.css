@@ -305,6 +305,94 @@ tbody tr.is-current {
   border-radius: 6px;
 }
 
+.sintatico {
+  margin-top: 1.4rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--line);
+}
+
+.arvore-ast {
+  margin: 0.8rem 0 0;
+  padding-left: 0;
+  list-style: none;
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.arvore-ast ul {
+  margin: 0.15rem 0 0.15rem 1.1rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--line);
+  list-style: none;
+}
+
+.no-ast {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: baseline;
+  width: 100%;
+  margin: 0.15rem 0;
+  padding: 0.2rem 0.35rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.no-ast:hover,
+.no-ast.is-selected {
+  background: var(--accent-soft);
+}
+
+.no-ast .badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #efe4d2;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.no-PROGRAMA .badge { background: #dce8e7; color: var(--accent); }
+.no-DECLARACAO_VARIAVEL .badge { background: #e5f3f2; color: #0f6e6b; }
+.no-ADICAO .badge,
+.no-SUBTRACAO .badge,
+.no-MULTIPLICACAO .badge,
+.no-DIVISAO .badge,
+.no-NEGACAO .badge { background: #f8e6df; color: #9a4a36; }
+.no-LITERAL_INTEIRO .badge,
+.no-LITERAL_REAL .badge,
+.no-LITERAL_BOOLEANO .badge { background: #f7ecd7; color: #8a6a2b; }
+
+.ast-textual {
+  margin: 0.9rem 0 0;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  background: #f6f1e8;
+  border-radius: 12px;
+  font-family: Consolas, "Cascadia Mono", "Courier New", monospace;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+#erros-sintaticos {
+  margin: 0.4rem 0 0;
+  padding-left: 1.15rem;
+  line-height: 1.45;
+}
+
+.codigo-colorido .is-ast-selected {
+  background: rgba(255, 255, 255, 0.18);
+  outline: 2px solid #e2b15a;
+  outline-offset: 1px;
+}
+
 @media (max-width: 800px) {
   .workspace {
     grid-template-columns: 1fr;

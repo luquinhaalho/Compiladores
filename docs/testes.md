@@ -78,10 +78,22 @@ npx playwright test
 .venv\Scripts\python -m pytest -m deploy --override-ini="addopts="
 ```
 
-- Resultado em 27 de outubro de 2026: 1 reprovado. O Docker CLI respondeu, mas o daemon não estava em execução (`failed to connect to the docker API at npipe:////./pipe/dockerDesktopLinuxEngine`). As imagens não foram reconstruídas nesta tentativa.
-- A suíte de backend e a de interface não dependem do daemon e passaram na mesma data.
-- Correção pendente: iniciar o Docker Desktop e repetir o comando acima.
+- Resultado em 27 de outubro de 2026: 1 reprovado (daemon parado).
+- Em 25 de novembro de 2026 (Etapa 4): o CLI respondeu `Docker Desktop is unable to start`. O teste `deploy` ficou pendente. Backend (81) e interface (10) passaram sem Docker.
+
+## Parser e AST — Etapa 4
+
+- Módulos: `backend/app/parser.py`, `ast_nodes.py`, contrato de `POST /api/analisar`.
+- Tipo: unitário (precedência, associatividade, erros), endpoint e regressão léxica.
+- Comando:
+
+```bash
+.venv\Scripts\python -m pytest
+```
+
+- Resultado em 25 de novembro de 2026: **81 aprovados**, 0 reprovados, 1 desmarcado (`deploy`), 1 aviso do `TestClient`.
+- Interface (`npx playwright test`): **10 aprovados**, incluindo AST, clique no nó `MULTIPLICACAO`, erro sintático com regra e regressão das etapas 2–3.
 
 ## Limitações
 
-Ainda não há testes de análise sintática ou semântica, porque esses analisadores não existem nesta etapa.
+Ainda não há testes de análise semântica. O teste `deploy` depende do daemon Docker estar em execução.
